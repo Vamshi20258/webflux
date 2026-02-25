@@ -11,5 +11,3 @@ public class RidePricingApplication {
 	}
 
 }
-1
-2

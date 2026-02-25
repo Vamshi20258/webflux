@@ -48,19 +48,7 @@ public class PricingController {
                         )
                 );
     }
-    @PostMapping("/addPrice")
-    public Mono<ApiResponse<Object>> addSlab(
-            @RequestBody AddSlabRequest request) {
 
-        return pricingService.addSlab(request)
-                .map(response ->
-                        ApiResponse.success(
-                                201,
-                                "Slab created successfully",
-                                response
-                        )
-                );
-    }
 
 
 
@@ -76,6 +64,14 @@ public class PricingController {
                                 "Successfully Retrieved Pricing History",
                                 list
                         )
+                );
+    }
+
+    @PostMapping("/addPrice")
+    public Mono<ApiResponse<Object>> addSlab(@RequestBody AddSlabRequest request) {
+        return pricingService.addSlab(request)
+                .map(response ->
+                        ApiResponse.success(201, "Slab created and pricing auto-generated successfully", response)
                 );
     }
 }
