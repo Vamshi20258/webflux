@@ -48,6 +48,7 @@ public class PricingController {
                         )
                 );
     }
+    @PostMapping("/addPrice")
     public Mono<ApiResponse<Object>> addSlab(
             @RequestBody AddSlabRequest request) {
 
