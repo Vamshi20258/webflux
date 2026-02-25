@@ -1,27 +1,23 @@
 package com.example.ride_pricing.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name="vehicles")
+@Table("vehicles")
 public class Vehicle {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     private String name;
-
-    @Column(name="price_increment")
     private Double priceIncrement;
+    private Boolean active;
 
-    private Boolean active = true;
-
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -49,4 +45,3 @@ public class Vehicle {
         this.active = active;
     }
 }
-

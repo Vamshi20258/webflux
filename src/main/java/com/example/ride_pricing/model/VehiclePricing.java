@@ -1,54 +1,48 @@
 package com.example.ride_pricing.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name="vehicle_pricing")
+@Table("vehicle_pricing")
 public class VehiclePricing {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
-    private Integer vehicleId;
-    private Integer slabId;
-    private Integer serviceId;
+    private Long vehicleId;
+    private Long slabId;
+    private Long serviceId;
 
     private Double finalPrice;
+    private LocalDateTime updatedAt;
 
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Integer getVehicleId() {
+    public Long getVehicleId() {
         return vehicleId;
     }
 
-    public void setVehicleId(Integer vehicleId) {
+    public void setVehicleId(Long vehicleId) {
         this.vehicleId = vehicleId;
     }
 
-    public Integer getSlabId() {
+    public Long getSlabId() {
         return slabId;
     }
 
-    public void setSlabId(Integer slabId) {
+    public void setSlabId(Long slabId) {
         this.slabId = slabId;
     }
 
-    public Integer getServiceId() {
+    public Long getServiceId() {
         return serviceId;
     }
 
-    public void setServiceId(Integer serviceId) {
+    public void setServiceId(Long serviceId) {
         this.serviceId = serviceId;
     }
 

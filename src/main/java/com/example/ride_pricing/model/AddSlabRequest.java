@@ -1,21 +1,18 @@
 package com.example.ride_pricing.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+public class AddSlabRequest {
 
-@Table("pricing_slabs")
-public class PricingSlab {
-
-    @Id
-    private Long id;
-
+    private String serviceType;
     private Double minKm;
     private Double maxKm;
     private Double basePrice;
-    private Boolean active;
 
-    public Long getId() {
-        return id;
+    public String getServiceType() {
+        return serviceType;
+    }
+
+    public void setServiceType(String serviceType) {
+        this.serviceType = serviceType;
     }
 
     public Double getMinKm() {
@@ -40,13 +37,5 @@ public class PricingSlab {
 
     public void setBasePrice(Double basePrice) {
         this.basePrice = basePrice;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
     }
 }

@@ -1,12 +1,21 @@
 package com.example.ride_pricing.repository;
 
 import com.example.ride_pricing.model.PricingSlab;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-public interface PricingSlabRepository extends JpaRepository<PricingSlab,Integer> {
-    PricingSlab findByMinKmLessThanEqualAndMaxKmGreaterThan(Double km1, Double km2);
+public interface PricingSlabRepository
+        extends ReactiveCrudRepository<PricingSlab, Long> {
 
+    Flux<PricingSlab> findByMinKmLessThanEqualAndMaxKmGreaterThanEqual(
+            Double minKm,
+            Double maxKm
+    );
 
+    // Used in addSlab() to prevent overlapping slabs
+    Mono<Boolean> existsByMinKmLessThanEqualAndMaxKmGreaterThanEqual(
+            Double maxKm,
+            Double minKm
+    );
 }
-

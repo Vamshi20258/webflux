@@ -1,22 +1,21 @@
 package com.example.ride_pricing.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name="services")
+@Table("services")
 public class ServiceType {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;   // ✅ Changed to Long
 
     private String name;
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {   // ✅ Long
         this.id = id;
     }
 
@@ -28,4 +27,3 @@ public class ServiceType {
         this.name = name;
     }
 }
-

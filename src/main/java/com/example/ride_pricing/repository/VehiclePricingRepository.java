@@ -1,9 +1,15 @@
 package com.example.ride_pricing.repository;
 
 import com.example.ride_pricing.model.VehiclePricing;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Mono;
 
-public interface VehiclePricingRepository extends JpaRepository<VehiclePricing,Integer> {
-    VehiclePricing findByVehicleIdAndSlabIdAndServiceId(Integer vehicleId, Integer slabId,Integer ServiceId);
+public interface VehiclePricingRepository
+        extends ReactiveCrudRepository<VehiclePricing, Long> {
+
+    Mono<VehiclePricing> findByVehicleIdAndSlabIdAndServiceId(
+            Long vehicleId,
+            Long slabId,
+            Long serviceId
+    );
 }
-

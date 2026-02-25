@@ -1,109 +1,205 @@
 package com.example.ride_pricing.service;
 
+import com.example.ride_pricing.common.ApiResponse;
 import com.example.ride_pricing.model.*;
 import com.example.ride_pricing.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class PricingService {
 
-    @Autowired
-    private VehicleRepository vehicleRepo;
+    private final VehicleRepository vehicleRepo;
+    private final ServiceTypeRepository serviceRepo;
+    private final PricingSlabRepository slabRepo;
+    private final VehiclePricingRepository vpRepo;
+    private final PricingHistoryRepository historyRepo;
 
-    @Autowired
-    private ServiceTypeRepository serviceRepo;
-
-    @Autowired
-    private PricingSlabRepository slabRepo;
-
-    @Autowired
-    private VehiclePricingRepository vpRepo;
-
-    @Autowired
-    private PricingHistoryRepository historyRepo;
-
-
-    public Double calculatePrice(String vehicleName, Double kms, String serviceName) {
-
-        Vehicle vehicle = vehicleRepo.findByNameIgnoreCase(vehicleName);
-        if (vehicle == null)
-            throw new RuntimeException("Vehicle not found: " + vehicleName);
-
-        ServiceType service = serviceRepo.findByNameIgnoreCase(serviceName);
-        if (service == null)
-            throw new RuntimeException("Service not found: " + serviceName);
-
-
-        PricingSlab slab =
-                slabRepo.findByMinKmLessThanEqualAndMaxKmGreaterThan(kms, kms);
-
-        if (slab == null)
-            throw new RuntimeException("No pricing slab found for kms: " + kms);
-
-        VehiclePricing vp =
-                vpRepo.findByVehicleIdAndSlabIdAndServiceId(
-                        vehicle.getId(), slab.getId(), service.getId());
-
-        if (vp == null)
-            throw new RuntimeException("Pricing not configured for this combination");
-
-        return vp.getFinalPrice();
+    public PricingService(
+            VehicleRepository vehicleRepo,
+            ServiceTypeRepository serviceRepo,
+            PricingSlabRepository slabRepo,
+            VehiclePricingRepository vpRepo,
+            PricingHistoryRepository historyRepo
+    ) {
+        this.vehicleRepo = vehicleRepo;
+        this.serviceRepo = serviceRepo;
+        this.slabRepo = slabRepo;
+        this.vpRepo = vpRepo;
+        this.historyRepo = historyRepo;
     }
 
 
-    public String updatePrice(String vehicleName,
-                              Double kms,
-                              String serviceName,
-                              Double newPrice) {
+    public Mono<PriceViewResponse> calculatePrice(String vehicleName,
+                                                  Double kms,
+                                                  String serviceName) {
 
-        Vehicle vehicle = vehicleRepo.findByNameIgnoreCase(vehicleName);
-        if (vehicle == null)
-            throw new RuntimeException("Vehicle not found: " + vehicleName);
+        return vehicleRepo.findByNameIgnoreCase(vehicleName)
+                .switchIfEmpty(Mono.error(new RuntimeException("Vehicle not found")))
 
-        ServiceType service = serviceRepo.findByNameIgnoreCase(serviceName);
-        if (service == null)
-            throw new RuntimeException("Service not found: " + serviceName);
+                .zipWith(serviceRepo.findByNameIgnoreCase(serviceName)
+                        .switchIfEmpty(Mono.error(new RuntimeException("Service not found"))))
 
+                .flatMap(tuple -> {
 
-        PricingSlab slab =
-                slabRepo.findByMinKmLessThanEqualAndMaxKmGreaterThan(kms, kms);
+                    Vehicle vehicle = tuple.getT1();
+                    ServiceType service = tuple.getT2();
 
-        if (slab == null)
-            throw new RuntimeException("No slab found for kms: " + kms);
+                    return slabRepo
+                            .findByMinKmLessThanEqualAndMaxKmGreaterThanEqual(kms, kms)
+                            .next()
+                            .switchIfEmpty(Mono.error(new RuntimeException("Slab not found")))
 
-        VehiclePricing vp =
-                vpRepo.findByVehicleIdAndSlabIdAndServiceId(
-                        vehicle.getId(), slab.getId(), service.getId());
+                            .flatMap(slab ->
+                                    vpRepo.findByVehicleIdAndSlabIdAndServiceId(
+                                                    vehicle.getId(),
+                                                    slab.getId(),
+                                                    service.getId())
+                                            .switchIfEmpty(Mono.error(
+                                                    new RuntimeException("Pricing not configured for this vehicle/service/slab")))
 
-        if (vp == null)
-            throw new RuntimeException("Pricing row missing!");
-
-
-        PricingHistory history = new PricingHistory();
-        history.setVehicleId(vehicle.getId());
-        history.setSlabId(slab.getId());
-        history.setServiceId(service.getId());
-        history.setOldPrice(vp.getFinalPrice());
-        history.setNewPrice(newPrice);
-        history.setChangedAt(LocalDateTime.now());
-
-        historyRepo.save(history);
-
-
-        vp.setFinalPrice(newPrice);
-        vp.setUpdatedAt(LocalDateTime.now());
-        vpRepo.save(vp);
-
-        return "Price updated successfully to :"+newPrice;
+                                            .map(vp ->
+                                                    new PriceViewResponse(
+                                                            vehicle.getName(),
+                                                            service.getName(),
+                                                            slab.getMinKm() + " KM - "
+                                                                    + slab.getMaxKm() + " KM",
+                                                            vp.getFinalPrice()
+                                                    )
+                                            )
+                            );
+                });
     }
 
 
-    public List<PricingHistory> getAllHistory()
-    {
+    public Mono<ApiResponse<Object>> addSlab(AddSlabRequest request) {
+
+        return serviceRepo.findByNameIgnoreCase(request.getServiceType())
+                .switchIfEmpty(Mono.error(new RuntimeException("Service not found")))
+
+                .flatMap(service ->
+
+                        slabRepo.existsByMinKmLessThanEqualAndMaxKmGreaterThanEqual(
+                                        request.getMaxKm(),
+                                        request.getMinKm()
+                                )
+
+                                .flatMap(exists -> {
+
+                                    if (exists) {
+                                        return Mono.error(
+                                                new RuntimeException("Overlapping slab exists")
+                                        );
+                                    }
+
+                                    PricingSlab slab = new PricingSlab();
+                                    slab.setMinKm(request.getMinKm());
+                                    slab.setMaxKm(request.getMaxKm());
+                                    slab.setBasePrice(request.getBasePrice());
+                                    slab.setActive(true);
+
+                                    return slabRepo.save(slab)
+
+                                            .flatMap(savedSlab ->
+
+                                                    vehicleRepo.findAll()
+
+                                                            .flatMap(vehicle -> {
+
+                                                                Double finalPrice =
+                                                                        savedSlab.getBasePrice()
+                                                                                + vehicle.getPriceIncrement();
+
+                                                                VehiclePricing vp =
+                                                                        new VehiclePricing();
+
+                                                                vp.setVehicleId(vehicle.getId());
+                                                                vp.setServiceId(service.getId());
+                                                                vp.setSlabId(savedSlab.getId());
+                                                                vp.setFinalPrice(finalPrice);
+
+                                                                return vpRepo.save(vp);
+                                                            })
+
+                                                            .then(Mono.just(
+                                                                    ApiResponse.success(
+                                                                            201,
+                                                                            "Slab created & pricing auto-generated",
+                                                                            null
+                                                                    )
+                                                            ))
+                                            );
+                                })
+                );
+    }
+
+
+    public Mono<PriceUpdateResponse> updatePrice(String vehicleName,
+                                                 Double kms,
+                                                 String serviceName,
+                                                 Double newPrice) {
+
+        return vehicleRepo.findByNameIgnoreCase(vehicleName)
+                .switchIfEmpty(Mono.error(new RuntimeException("Vehicle not found")))
+
+                .zipWith(serviceRepo.findByNameIgnoreCase(serviceName)
+                        .switchIfEmpty(Mono.error(new RuntimeException("Service not found"))))
+
+                .flatMap(tuple -> {
+
+                    Vehicle vehicle = tuple.getT1();
+                    ServiceType service = tuple.getT2();
+
+                    return slabRepo
+                            .findByMinKmLessThanEqualAndMaxKmGreaterThanEqual(kms, kms)
+                            .next()
+                            .switchIfEmpty(Mono.error(new RuntimeException("Slab not found")))
+
+                            .flatMap(slab ->
+                                    vpRepo.findByVehicleIdAndSlabIdAndServiceId(
+                                                    vehicle.getId(),
+                                                    slab.getId(),
+                                                    service.getId())
+                                            .switchIfEmpty(Mono.error(
+                                                    new RuntimeException("Pricing not found")))
+
+                                            .flatMap(vp -> {
+
+                                                Double oldPrice = vp.getFinalPrice();
+
+                                                PricingHistory history = new PricingHistory();
+                                                history.setVehicleId(vehicle.getId());
+                                                history.setSlabId(slab.getId());
+                                                history.setServiceId(service.getId());
+                                                history.setOldPrice(oldPrice);
+                                                history.setNewPrice(newPrice);
+                                                history.setChangedAt(LocalDateTime.now());
+
+                                                vp.setFinalPrice(newPrice);
+                                                vp.setUpdatedAt(LocalDateTime.now());
+
+                                                return historyRepo.save(history)
+                                                        .then(vpRepo.save(vp))
+                                                        .thenReturn(
+                                                                new PriceUpdateResponse(
+                                                                        vehicle.getName(),
+                                                                        service.getName(),
+                                                                        slab.getMinKm(),
+                                                                        slab.getMaxKm(),
+                                                                        oldPrice,
+                                                                        newPrice,
+                                                                        vp.getUpdatedAt()
+                                                                )
+                                                        );
+                                            })
+                            );
+                });
+    }
+
+    public Flux<PricingHistory> getAllHistory() {
         return historyRepo.findAllByOrderByChangedAtDesc();
     }
 }

@@ -1,41 +1,80 @@
 package com.example.ride_pricing.controller;
 
-import com.example.ride_pricing.model.PricingHistory;
+import com.example.ride_pricing.common.ApiResponse;
+import com.example.ride_pricing.model.*;
 import com.example.ride_pricing.service.PricingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/pricing")
 public class PricingController {
 
-    @Autowired
-    private PricingService pricingService;
+    private final PricingService pricingService;
 
+    public PricingController(PricingService pricingService) {
+        this.pricingService = pricingService;
+    }
 
     @GetMapping("/calculate")
-    public Double getPrice(@RequestParam String vehicle,
-                           @RequestParam Double kms,
-                           @RequestParam String serviceType) {
+    public Mono<ApiResponse<Object>> getPrice(@RequestParam String vehicle,
+                                              @RequestParam Double kms,
+                                              @RequestParam String serviceType) {
 
-        return pricingService.calculatePrice(vehicle, kms, serviceType);
+        return pricingService.calculatePrice(vehicle, kms, serviceType)
+                .map(response ->
+                        ApiResponse.success(
+                                200,
+                                "Price calculated successfully",
+                                response
+                        )
+                );
     }
 
 
     @PutMapping("/updatePrice")
-    public String updatePrice(@RequestParam String vehicle,
-                              @RequestParam Double kms,
-                              @RequestParam String serviceType,
-                              @RequestParam Double newPrice) {
+    public Mono<ApiResponse<Object>> updatePrice(@RequestParam String vehicle,
+                                                 @RequestParam Double kms,
+                                                 @RequestParam String serviceType,
+                                                 @RequestParam Double newPrice) {
 
-        return pricingService.updatePrice(vehicle, kms, serviceType, newPrice);
+        return pricingService.updatePrice(vehicle, kms, serviceType, newPrice)
+                .map(response ->
+                        ApiResponse.success(
+                                200,
+                                "Price updated successfully",
+                                response
+                        )
+                );
+    }
+    public Mono<ApiResponse<Object>> addSlab(
+            @RequestBody AddSlabRequest request) {
+
+        return pricingService.addSlab(request)
+                .map(response ->
+                        ApiResponse.success(
+                                201,
+                                "Slab created successfully",
+                                response
+                        )
+                );
     }
 
-    @GetMapping("/UpdatedHistory")
-    public List<PricingHistory> history()
-    {
-        return pricingService.getAllHistory();
+
+
+
+    @GetMapping("/updatedHistory")
+    public Mono<ApiResponse<Object>> history() {
+
+        return pricingService.getAllHistory()
+                .collectList()
+                .map(list ->
+                        ApiResponse.success(
+                                200,
+                                "Successfully Retrieved Pricing History",
+                                list
+                        )
+                );
     }
 }

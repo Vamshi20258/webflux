@@ -1,10 +1,10 @@
 package com.example.ride_pricing.repository;
 
 import com.example.ride_pricing.model.PricingHistory;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
 
-import java.util.List;
+public interface PricingHistoryRepository extends ReactiveCrudRepository<PricingHistory, Long> {
 
-public interface PricingHistoryRepository extends JpaRepository<PricingHistory,Integer> {
-    List<PricingHistory> findAllByOrderByChangedAtDesc();
+    Flux<PricingHistory> findAllByOrderByChangedAtDesc();
 }
