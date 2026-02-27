@@ -4,7 +4,6 @@ import com.example.ride_pricing.common.ApiResponse;
 import com.example.ride_pricing.model.*;
 import com.example.ride_pricing.service.PricingService;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -48,6 +47,7 @@ public class PricingController {
                         )
                 );
     }
+    @PostMapping("/addPrice")
     public Mono<ApiResponse<Object>> addSlab(
             @RequestBody AddSlabRequest request) {
 
