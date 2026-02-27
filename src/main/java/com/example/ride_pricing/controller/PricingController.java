@@ -61,7 +61,6 @@ public class PricingController {
                 );
     }
 
-//Ravi TEja Bhai DOn
 
     @GetMapping("/updatedHistory")
     public Mono<ApiResponse<Object>> history() {
@@ -75,5 +74,12 @@ public class PricingController {
                                 list
                         )
                 );
+    }
+
+    @GetMapping("/all")
+    public Mono<ApiResponse<Object>> getAllPrices() {
+        return pricingService.getAllPrices()
+                .collectList()
+                .map(list -> ApiResponse.success(200, "All prices retrieved", list));
     }
 }

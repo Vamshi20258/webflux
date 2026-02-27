@@ -51,7 +51,7 @@ public class PricingService {
                     return slabRepo
                             .findByMinKmLessThanEqualAndMaxKmGreaterThanEqual(kms, kms)
                             .next()
-                            .switchIfEmpty(Mono.error(new RuntimeException("Slab not found")))
+                            .switchIfEmpty(Mono.error(new RuntimeException("Not in the range")))
 
                             .flatMap(slab ->
                                     vpRepo.findByVehicleIdAndSlabIdAndServiceId(
@@ -61,13 +61,14 @@ public class PricingService {
                                             .switchIfEmpty(Mono.error(
                                                     new RuntimeException("Pricing not configured for this vehicle/service/slab")))
 
+                                            // Inside PricingService.java -> calculatePrice method
                                             .map(vp ->
                                                     new PriceViewResponse(
-                                                            vehicle.getName(),
-                                                            service.getName(),
-                                                            slab.getMinKm() + " KM - "
-                                                                    + slab.getMaxKm() + " KM",
-                                                            vp.getFinalPrice()
+                                                            vehicle.getName(),      // vehicle name
+                                                            service.getName(),      // service type
+                                                            slab.getMinKm() + " KM - " + slab.getMaxKm() + " KM", // range
+                                                            vp.getFinalPrice(),     // price
+                                                            vehicle.getActive() ? "Active" : "Inactive" // ADD THIS: status
                                                     )
                                             )
                             );
@@ -202,4 +203,28 @@ public class PricingService {
     public Flux<PricingHistory> getAllHistory() {
         return historyRepo.findAllByOrderByChangedAtDesc();
     }
+
+    public Flux<PriceViewResponse> getAllPrices() {
+        return vpRepo.findAll() // Fetch all entries from vehicle_pricing
+                .flatMap(vp ->
+                        Mono.zip(
+                                vehicleRepo.findById(vp.getVehicleId()),
+                                serviceRepo.findById(vp.getServiceId()),
+                                slabRepo.findById(vp.getSlabId())
+                        ).map(tuple -> {
+                            Vehicle v = tuple.getT1();
+                            ServiceType s = tuple.getT2();
+                            PricingSlab slab = tuple.getT3();
+
+                            return new PriceViewResponse(
+                                    v.getName(),
+                                    s.getName(),
+                                    slab.getMinKm() + " - " + slab.getMaxKm() + " KM",
+                                    vp.getFinalPrice(),
+                                    v.getActive() ? "Active" : "Inactive"
+                            );
+                        })
+                );
+    }
+
 }

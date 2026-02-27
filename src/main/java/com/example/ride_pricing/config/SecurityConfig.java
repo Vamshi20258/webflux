@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
 
                 .authorizeExchange(exchange -> exchange
+                        .pathMatchers("/pricing/all").hasAnyRole("USER","ADMIN")
                         .pathMatchers("/pricing/calculate").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/pricing/updatedHistory").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/pricing/addPrice").hasRole("ADMIN")
