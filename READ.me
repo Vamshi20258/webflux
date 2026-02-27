@@ -1,11 +1,11 @@
 GET:
-http://localhost:8080/pricing/calculate?vehicle=Mini&kms=12&serviceType=Ride
+http://localhost:8081/pricing/calculate?vehicle=Mini&kms=12&serviceType=Ride
 
 PUT:
-http://localhost:8080/pricing/updatePrice?vehicle=Mini&kms=12&serviceType=Ride&newPrice=180
+http://localhost:8081/pricing/updatePrice?vehicle=Mini&kms=12&serviceType=Ride&newPrice=180
 
 POST:
-http://localhost:8080/pricing/addPrice
+http://localhost:8081/pricing/addPrice
 {
   "vehicle": "EV Bike",
   "minKm": 5,
@@ -15,4 +15,4 @@ http://localhost:8080/pricing/addPrice
 }
 
 GET:
-http://localhost:8080/pricing/history
+http://localhost:8081/pricing/history
