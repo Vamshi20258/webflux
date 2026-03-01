@@ -6,6 +6,8 @@ public class AddSlabRequest {
     private Double minKm;
     private Double maxKm;
     private Double basePrice;
+    private String vehicle;
+    private Double price;
 
     public String getServiceType() {
         return serviceType;
@@ -37,5 +39,21 @@ public class AddSlabRequest {
 
     public void setBasePrice(Double basePrice) {
         this.basePrice = basePrice;
+    }
+
+    public String getVehicle() {
+        return vehicle;
+    }
+
+    public void setVehicle(String vehicle) {
+        this.vehicle = vehicle;
+    }
+
+    public Double getPrice() {
+        return price;
+    }
+
+    public void setPrice(Double price) {
+        this.price = price;
     }
 }

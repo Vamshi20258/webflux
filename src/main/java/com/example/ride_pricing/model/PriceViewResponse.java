@@ -7,6 +7,7 @@ public class PriceViewResponse {
     private Double price;
     private String status;
 
+    // Fixed constructor to support 5 arguments as used in PricingService
     public PriceViewResponse(String vehicle, String serviceType, String range, Double price, String status) {
         this.vehicle = vehicle;
         this.serviceType = serviceType;
@@ -15,14 +16,10 @@ public class PriceViewResponse {
         this.status = status;
     }
 
-    public PriceViewResponse() {
-    }
+    // Default constructor for serialization
+    public PriceViewResponse() {}
 
-    public PriceViewResponse(String name, String name1, String s, Double finalPrice) {
-    }
-
-
-    // GETTERS ARE REQUIRED FOR JSON SERIALIZATION
+    // Getters for JSON serialization
     public String getVehicle() { return vehicle; }
     public String getServiceType() { return serviceType; }
     public String getRange() { return range; }

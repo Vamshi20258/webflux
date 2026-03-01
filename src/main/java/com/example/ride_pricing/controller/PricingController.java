@@ -20,15 +20,8 @@ public class PricingController {
     public Mono<ApiResponse<Object>> getPrice(@RequestParam String vehicle,
                                               @RequestParam Double kms,
                                               @RequestParam String serviceType) {
-
         return pricingService.calculatePrice(vehicle, kms, serviceType)
-                .map(response ->
-                        ApiResponse.success(
-                                200,
-                                "Price calculated successfully",
-                                response
-                        )
-                );
+                .map(response -> ApiResponse.success(200, "Price calculated successfully", response));
     }
 
 
@@ -48,19 +41,7 @@ public class PricingController {
                 );
     }
 
-    @PostMapping("/addRange")
-    public Mono<ApiResponse<Object>> addSlab(
-            @RequestBody AddSlabRequest request) {
 
-        return pricingService.addSlab(request)
-                .map(response ->
-                        ApiResponse.success(
-                                201,
-                                "Slab created successfully",
-                                response
-                        )
-                );
-    }
 
 
     @GetMapping("/updatedHistory")
@@ -82,5 +63,11 @@ public class PricingController {
         return pricingService.getAllPrices()
                 .collectList()
                 .map(list -> ApiResponse.success(200, "All prices retrieved", list));
+    }
+
+    @PostMapping("/addPrice")
+    public Mono<ApiResponse<Object>> addPrice(@RequestBody SlabPriceRequest request) {
+        return pricingService.addNewPricing(request)
+                .map(response -> ApiResponse.success(201, "Pricing added successfully", response));
     }
 }
