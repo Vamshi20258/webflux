@@ -49,4 +49,6 @@ public class PricingSlab {
     public void setActive(Boolean active) {
         this.active = active;
     }
+
+
 }
