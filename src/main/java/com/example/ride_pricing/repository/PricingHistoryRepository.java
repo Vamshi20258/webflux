@@ -7,4 +7,5 @@ import reactor.core.publisher.Flux;
 public interface PricingHistoryRepository extends ReactiveCrudRepository<PricingHistory, Long> {
 
     Flux<PricingHistory> findAllByOrderByChangedAtDesc();
+
 }

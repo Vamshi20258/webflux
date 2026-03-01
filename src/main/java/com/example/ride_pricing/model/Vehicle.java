@@ -1,6 +1,7 @@
 package com.example.ride_pricing.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("vehicles")
@@ -10,8 +11,24 @@ public class Vehicle {
     private Long id;
 
     private String name;
+
+    @Column("price_increment")
     private Double priceIncrement;
+
     private Boolean active;
+
+    public Vehicle() {
+    }
+
+    public Vehicle(Long id, String name, Double priceIncrement, Boolean active) {
+        this.id = id;
+        this.name = name;
+        this.priceIncrement = priceIncrement;
+        this.active = active;
+    }
+
+    public Vehicle(Object o, String vehicleName) {
+    }
 
     public Long getId() {
         return id;

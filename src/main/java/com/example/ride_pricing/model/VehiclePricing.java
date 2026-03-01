@@ -1,10 +1,9 @@
 package com.example.ride_pricing.model;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.ReadOnlyProperty;
+import org.springframework.data.annotation.Transient; // Required
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-
 import java.time.LocalDateTime;
 
 @Table("vehicle_pricing")
@@ -13,23 +12,39 @@ public class VehiclePricing {
     @Id
     private Long id;
 
+    @Column("vehicle_id")
     private Long vehicleId;
+
+    @Column("slab_id")
     private Long slabId;
+
+    @Column("service_id")
     private Long serviceId;
-    private LocalDateTime createdAt;
+
+    @Column("final_price")
     private Double finalPrice;
+
+    @Column("created_at")
+    private LocalDateTime createdAt;
+
+    @Column("updated_at")
     private LocalDateTime updatedAt;
-    @ReadOnlyProperty
-    @Column("vehicle_name")
+
+    @Transient
     private String vehicleName;
-    @ReadOnlyProperty
-    @Column("service_name")
+
+    @Transient
     private String serviceName;
-    @ReadOnlyProperty
+
+    @Transient
     private String range;
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getVehicleId() {
@@ -64,14 +79,6 @@ public class VehiclePricing {
         this.finalPrice = finalPrice;
     }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -80,8 +87,12 @@ public class VehiclePricing {
         this.createdAt = createdAt;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public String getVehicleName() {

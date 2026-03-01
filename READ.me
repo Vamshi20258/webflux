@@ -1,8 +1,11 @@
 GET:
-http://localhost:8081/pricing/calculate?vehicle=Mini&kms=12&serviceType=Ride
+http://localhost:8081/pricing/calculate?vehicle=Bike&kms=0.5&serviceType=Ride
+
+GET:
+http://localhost:8081/pricing/addPrice
 
 PUT:
-http://localhost:8081/pricing/updatePrice?vehicle=Mini&kms=12&serviceType=Ride&newPrice=180
+http://localhost:8081/pricing/updatePrice?vehicle=Bike&kms=0.5&serviceType=Ride&newPrice=15
 
 POST:
 http://localhost:8081/pricing/addPrice
@@ -15,4 +18,8 @@ http://localhost:8081/pricing/addPrice
 }
 
 GET:
-http://localhost:8081/pricing/history
+http://localhost:8081/pricing/updatedHistory
+
+GET http://localhost:8081/pricing/active-prices?kms=55&serviceType=Ride
+
+POST http://localhost:8081/pricing/add-vehicle?name=Mini

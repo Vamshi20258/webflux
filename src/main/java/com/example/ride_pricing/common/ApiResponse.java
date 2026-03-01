@@ -2,39 +2,43 @@ package com.example.ride_pricing.common;
 
 public class ApiResponse<T> {
 
-    private String status;
-    private int code;
+    private int status;
     private String message;
     private T data;
 
     public ApiResponse() {}
 
-    public ApiResponse(String status, int code, String message, T data) {
+    public ApiResponse(int status, String message, T data) {
         this.status = status;
-        this.code = code;
         this.message = message;
         this.data = data;
     }
 
-    public static <T> ApiResponse<T> success(int code, String message, T data) {
-        return new ApiResponse<>("SUCCESS", code, message, data);
+    // --------- Static Helpers ---------
+
+    public static <T> ApiResponse<T> success(int status, String message, T data) {
+        return new ApiResponse<>(status, message, data);
     }
 
-    public static <T> ApiResponse<T> failed(int code, String message) {
-        return new ApiResponse<>("FAILED", code, message, null);
+    public static <T> ApiResponse<T> failed(int status, String message) {
+        return new ApiResponse<>(status, message, null);
     }
 
-    public static <T> ApiResponse<T> error(int code, String message) {
-        return new ApiResponse<>("ERROR", code, message, null);
+    // --------- Getters & Setters ---------
+
+    public int getStatus() {
+        return status;
     }
 
-    public String getStatus() { return status; }
-    public int getCode() { return code; }
-    public String getMessage() { return message; }
-    public T getData() { return data; }
+    public void setStatus(int status) {
+        this.status = status;
+    }
 
-    public void setStatus(String status) { this.status = status; }
-    public void setCode(int code) { this.code = code; }
-    public void setMessage(String message) { this.message = message; }
-    public void setData(T data) { this.data = data; }
+    public String getMessage() {
+        return message;
+    }
+
+    public T getData() {
+        return data;
+    }
 }

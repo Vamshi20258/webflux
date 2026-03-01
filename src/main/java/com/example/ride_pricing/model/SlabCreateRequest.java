@@ -2,15 +2,40 @@ package com.example.ride_pricing.model;
 
 public class SlabCreateRequest {
 
-    private String vehicle;
-    private String serviceType;
     private Double minKm;
     private Double maxKm;
-    private Double price;
+    private Double basePrice;
+    private Boolean active;
 
-    public String getVehicle() { return vehicle; }
-    public String getServiceType() { return serviceType; }
-    public Double getMinKm() { return minKm; }
-    public Double getMaxKm() { return maxKm; }
-    public Double getPrice() { return price; }
+    public Double getMinKm() {
+        return minKm;
+    }
+
+    public void setMinKm(Double minKm) {
+        this.minKm = minKm;
+    }
+
+    public Double getMaxKm() {
+        return maxKm;
+    }
+
+    public void setMaxKm(Double maxKm) {
+        this.maxKm = maxKm;
+    }
+
+    public Double getBasePrice() {
+        return basePrice;
+    }
+
+    public void setBasePrice(Double basePrice) {
+        this.basePrice = basePrice;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 }

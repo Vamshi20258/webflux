@@ -3,8 +3,13 @@ package com.example.ride_pricing.controller;
 import com.example.ride_pricing.common.ApiResponse;
 import com.example.ride_pricing.model.*;
 import com.example.ride_pricing.service.PricingService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/pricing")
@@ -16,58 +21,107 @@ public class PricingController {
         this.pricingService = pricingService;
     }
 
+    // -------------------- CALCULATE --------------------
+
     @GetMapping("/calculate")
-    public Mono<ApiResponse<Object>> getPrice(@RequestParam String vehicle,
-                                              @RequestParam Double kms,
-                                              @RequestParam String serviceType) {
+    public Mono<ResponseEntity<ApiResponse<PriceViewResponse>>> getPrice(
+            @RequestParam String vehicle,
+            @RequestParam Double kms,
+            @RequestParam String serviceType) {
+
         return pricingService.calculatePrice(vehicle, kms, serviceType)
-                .map(response -> ApiResponse.success(200, "Price calculated successfully", response));
+                .map(response ->
+                        ResponseEntity.ok(
+                                ApiResponse.success(200,
+                                        "Price calculated successfully",
+                                        response)))
+                .onErrorResume(RuntimeException.class, ex ->
+                        Mono.just(
+                                ResponseEntity.badRequest()
+                                        .body(ApiResponse.failed(400, ex.getMessage()))
+                        ));
     }
 
+    // -------------------- ADD PRICE --------------------
+
+    @PostMapping("/addPrice")
+    public Mono<ResponseEntity<ApiResponse<Object>>> addPrice(
+            @RequestBody SlabPriceRequest request) {
+
+        return pricingService.addNewPricing(request)
+                .map(api -> ResponseEntity.status(api.getStatus()).body(api))
+                .onErrorResume(RuntimeException.class, ex ->
+                        Mono.just(
+                                ResponseEntity.badRequest()
+                                        .body(ApiResponse.failed(400, ex.getMessage()))
+                        ));
+    }
+
+    // -------------------- UPDATE --------------------
 
     @PutMapping("/updatePrice")
-    public Mono<ApiResponse<Object>> updatePrice(@RequestParam String vehicle,
-                                                 @RequestParam Double kms,
-                                                 @RequestParam String serviceType,
-                                                 @RequestParam Double newPrice) {
+    public Mono<ResponseEntity<ApiResponse<PriceUpdateResponse>>> updatePrice(
+            @RequestParam String vehicle,
+            @RequestParam Double kms,
+            @RequestParam String serviceType,
+            @RequestParam Double newPrice) {
 
         return pricingService.updatePrice(vehicle, kms, serviceType, newPrice)
                 .map(response ->
-                        ApiResponse.success(
-                                200,
-                                "Price updated successfully",
-                                response
-                        )
-                );
+                        ResponseEntity.ok(
+                                ApiResponse.success(200,
+                                        "Price updated successfully",
+                                        response)))
+                .onErrorResume(RuntimeException.class, ex ->
+                        Mono.just(
+                                ResponseEntity.badRequest()
+                                        .body(ApiResponse.failed(400, ex.getMessage()))
+                        ));
     }
 
-
-
+    // -------------------- HISTORY --------------------
 
     @GetMapping("/updatedHistory")
-    public Mono<ApiResponse<Object>> history() {
+    public Mono<ResponseEntity<ApiResponse<Object>>> history() {
 
         return pricingService.getAllHistory()
                 .collectList()
                 .map(list ->
-                        ApiResponse.success(
-                                200,
-                                "Successfully Retrieved Pricing History",
-                                list
-                        )
-                );
+                        ResponseEntity.ok(
+                                ApiResponse.success(200,
+                                        "Successfully Retrieved Pricing History",
+                                        list)));
     }
+
+    // -------------------- ALL PRICES --------------------
 
     @GetMapping("/all")
-    public Mono<ApiResponse<Object>> getAllPrices() {
+    public Mono<ResponseEntity<ApiResponse<Object>>> getAll() {
+
         return pricingService.getAllPrices()
                 .collectList()
-                .map(list -> ApiResponse.success(200, "All prices retrieved", list));
+                .map(list -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("pricingDetails", list);
+                    return ResponseEntity.ok(
+                            ApiResponse.success(200,
+                                    "Successfully Retrieved All Pricing Details",
+                                    data));
+                });
     }
 
-    @PostMapping("/addPrice")
-    public Mono<ApiResponse<Object>> addPrice(@RequestBody SlabPriceRequest request) {
-        return pricingService.addNewPricing(request)
-                .map(response -> ApiResponse.success(201, "Pricing added successfully", response));
+    @GetMapping("/active-prices")
+    public Flux<PriceViewResponse> getActivePrices(
+            @RequestParam Double kms,
+            @RequestParam String serviceType) {
+
+        return pricingService.getActivePricesByKmsAndService(kms, serviceType);
+    }
+
+    @PostMapping("/add-vehicle")
+    public Mono<ApiResponse<Object>> addVehicle(
+            @RequestParam String name) {
+
+        return pricingService.addVehicle(name);
     }
 }

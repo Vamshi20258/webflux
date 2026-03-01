@@ -7,5 +7,5 @@ import reactor.core.publisher.Mono;
 public interface ServiceTypeRepository extends ReactiveCrudRepository<ServiceType, Long> {
 
     Mono<ServiceType> findByNameIgnoreCase(String name);
-}
 
+}

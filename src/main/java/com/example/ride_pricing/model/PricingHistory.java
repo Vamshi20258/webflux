@@ -1,6 +1,7 @@
 package com.example.ride_pricing.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
@@ -11,16 +12,30 @@ public class PricingHistory {
     @Id
     private Long id;
 
+    @Column("vehicle_id")
     private Long vehicleId;
+
+    @Column("slab_id")
     private Long slabId;
+
+    @Column("service_id")
     private Long serviceId;
 
+    @Column("old_price")
     private Double oldPrice;
+
+    @Column("new_price")
     private Double newPrice;
+
+    @Column("changed_at")
     private LocalDateTime changedAt;
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getVehicleId() {
