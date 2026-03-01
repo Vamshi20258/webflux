@@ -157,7 +157,7 @@ public class PricingService {
                     return slabRepo
                             .findByMinKmLessThanEqualAndMaxKmGreaterThanEqual(kms, kms)
                             .next()
-                            .switchIfEmpty(Mono.error(new RuntimeException("Slab not found")))
+                            .switchIfEmpty(Mono.error(new RuntimeException("kms range not found")))
 
                             .flatMap(slab ->
                                     vpRepo.findByVehicleIdAndSlabIdAndServiceId(
