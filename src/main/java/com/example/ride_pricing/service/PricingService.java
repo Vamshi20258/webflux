@@ -36,9 +36,7 @@ public class PricingService {
         this.databaseClient = databaseClient;
     }
 
-    // =========================================================
-    // 1️⃣ CALCULATE PRICE
-    // =========================================================
+
 
     public Mono<PriceViewResponse> calculatePrice(String vehicleName,
                                                   Double kms,
@@ -75,9 +73,7 @@ public class PricingService {
                 });
     }
 
-    // =========================================================
-    // 2️⃣ ADD NEW PRICING
-    // =========================================================
+
 
     public Mono<ApiResponse<Object>> addNewPricing(SlabPriceRequest request) {
 
@@ -152,9 +148,6 @@ public class PricingService {
         return slab;
     }
 
-    // =========================================================
-    // 3️⃣ UPDATE PRICE
-    // =========================================================
 
     public Mono<PriceUpdateResponse> updatePrice(String vehicleName,
                                                  Double kms,
@@ -172,7 +165,7 @@ public class PricingService {
 
                     return slabRepo.findMatchingSlab(kms)
                             .next()
-                            .switchIfEmpty(Mono.error(new RuntimeException("Slab not found")))
+                            .switchIfEmpty(Mono.error(new RuntimeException("kms out of range")))
                             .flatMap(slab ->
                                     vpRepo.findByVehicleIdAndSlabIdAndServiceId(
                                                     vehicle.getId(),
@@ -210,9 +203,7 @@ public class PricingService {
                 });
     }
 
-    // =========================================================
-    // 4️⃣ GET ALL PRICES (FINAL CORRECT VERSION)
-    // =========================================================
+
 
     public Flux<PriceViewResponse> getAllPrices() {
 
@@ -251,28 +242,29 @@ public class PricingService {
                 .all();
     }
 
-    // =========================================================
-    // 5️⃣ GET HISTORY
-    // =========================================================
+
 
     public Flux<PricingHistory> getAllHistory() {
         return historyRepo.findAllByOrderByChangedAtDesc();
     }
 
-    public Flux<PriceViewResponse> getActivePricesByKmsAndService(Double kms,
-                                                                  String serviceName) {
+    public Mono<ApiResponse<Object>> getActivePricesByKmsAndService(
+            Double kms,
+            String serviceName) {
 
         return serviceRepo.findByNameIgnoreCase(serviceName)
                 .switchIfEmpty(Mono.error(new RuntimeException("Service not found")))
-                .flatMapMany(service ->
+                .flatMap(service ->
 
                         slabRepo.findMatchingSlab(kms)
                                 .next()
-                                .switchIfEmpty(Mono.error(new RuntimeException("KMs not supported")))
-                                .flatMapMany(slab -> {
+                                .switchIfEmpty(Mono.error(
+                                        new RuntimeException("KMs out of supported range")))
+                                .flatMap(slab -> {
 
                                     if (!Boolean.TRUE.equals(slab.getActive())) {
-                                        return Flux.empty(); // slab expired
+                                        return Mono.error(
+                                                new RuntimeException("This slab is expired"));
                                     }
 
                                     String sql = """
@@ -281,7 +273,6 @@ public class PricingService {
                                         s.name AS service_type,
                                         CONCAT(ps.min_km, ' - ', ps.max_km, ' KM') AS range,
                                         vp.final_price AS price,
-                                        ps.active AS active,
                                         vp.created_at AS created_at
                                     FROM vehicle_pricing vp
                                     JOIN vehicles v ON v.id = vp.vehicle_id
@@ -305,7 +296,23 @@ public class PricingService {
                                                             row.get("created_at", LocalDateTime.class)
                                                     )
                                             )
-                                            .all();
+                                            .all()
+                                            .collectList()
+                                            .flatMap(list -> {
+
+                                                if (list.isEmpty()) {
+                                                    return Mono.error(new RuntimeException(
+                                                            "No active pricing available for this range"));
+                                                }
+
+                                                return Mono.just(
+                                                        ApiResponse.success(
+                                                                200,
+                                                                "Active pricing retrieved successfully",
+                                                                list
+                                                        )
+                                                );
+                                            });
                                 })
                 );
     }

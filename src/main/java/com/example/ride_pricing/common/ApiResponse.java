@@ -24,7 +24,7 @@ public class ApiResponse<T> {
         return new ApiResponse<>(status, message, null);
     }
 
-    // --------- Getters & Setters ---------
+
 
     public int getStatus() {
         return status;

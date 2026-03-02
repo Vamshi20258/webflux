@@ -5,7 +5,6 @@ import com.example.ride_pricing.model.*;
 import com.example.ride_pricing.service.PricingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -21,7 +20,7 @@ public class PricingController {
         this.pricingService = pricingService;
     }
 
-    // -------------------- CALCULATE --------------------
+
 
     @GetMapping("/calculate")
     public Mono<ResponseEntity<ApiResponse<PriceViewResponse>>> getPrice(
@@ -42,7 +41,6 @@ public class PricingController {
                         ));
     }
 
-    // -------------------- ADD PRICE --------------------
 
     @PostMapping("/addPrice")
     public Mono<ResponseEntity<ApiResponse<Object>>> addPrice(
@@ -57,7 +55,7 @@ public class PricingController {
                         ));
     }
 
-    // -------------------- UPDATE --------------------
+
 
     @PutMapping("/updatePrice")
     public Mono<ResponseEntity<ApiResponse<PriceUpdateResponse>>> updatePrice(
@@ -79,7 +77,7 @@ public class PricingController {
                         ));
     }
 
-    // -------------------- HISTORY --------------------
+
 
     @GetMapping("/updatedHistory")
     public Mono<ResponseEntity<ApiResponse<Object>>> history() {
@@ -93,7 +91,7 @@ public class PricingController {
                                         list)));
     }
 
-    // -------------------- ALL PRICES --------------------
+
 
     @GetMapping("/all")
     public Mono<ResponseEntity<ApiResponse<Object>>> getAll() {
@@ -111,17 +109,36 @@ public class PricingController {
     }
 
     @GetMapping("/active-prices")
-    public Flux<PriceViewResponse> getActivePrices(
+    public Mono<ResponseEntity<ApiResponse<Object>>> getActivePrices(
             @RequestParam Double kms,
             @RequestParam String serviceType) {
 
-        return pricingService.getActivePricesByKmsAndService(kms, serviceType);
+        return pricingService.getActivePricesByKmsAndService(kms, serviceType)
+                .map(ResponseEntity::ok)
+                .onErrorResume(ex ->
+                        Mono.just(ResponseEntity.badRequest().body(
+                                ApiResponse.failed(400, ex.getMessage())
+                        ))
+                );
     }
 
     @PostMapping("/add-vehicle")
-    public Mono<ApiResponse<Object>> addVehicle(
+    public Mono<ResponseEntity<ApiResponse<Object>>> addVehicle(
             @RequestParam String name) {
 
-        return pricingService.addVehicle(name);
+        return pricingService.addVehicle(name)
+                .map(response -> {
+
+                    if (response.getStatus() == 409) {
+                        return ResponseEntity.status(409).body(response);
+                    }
+
+                    return ResponseEntity.status(201).body(response);
+                })
+                .onErrorResume(ex ->
+                        Mono.just(ResponseEntity.badRequest().body(
+                                ApiResponse.failed(400, ex.getMessage())
+                        ))
+                );
     }
 }

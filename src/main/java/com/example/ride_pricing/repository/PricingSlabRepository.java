@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 
 public interface PricingSlabRepository extends ReactiveCrudRepository<PricingSlab, Long> {
 
-    // Exact match
+
     @Query("""
         SELECT * FROM pricing_slabs
         WHERE min_km = :minKm
@@ -18,7 +18,7 @@ public interface PricingSlabRepository extends ReactiveCrudRepository<PricingSla
     Mono<PricingSlab> findExactSlab(@Param("minKm") Double minKm,
                                     @Param("maxKm") Double maxKm);
 
-    // Range match (FIXED)
+
     @Query("""
         SELECT * FROM pricing_slabs
         WHERE min_km <= :kms

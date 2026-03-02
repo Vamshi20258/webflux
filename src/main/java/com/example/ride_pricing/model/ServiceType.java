@@ -7,7 +7,7 @@ import org.springframework.data.relational.core.mapping.Table;
 public class ServiceType {
 
     @Id
-    private Long id;   // ✅ Changed to Long
+    private Long id;
 
     private String name;
 
@@ -15,7 +15,7 @@ public class ServiceType {
         return id;
     }
 
-    public void setId(Long id) {   // ✅ Long
+    public void setId(Long id) {
         this.id = id;
     }
 
