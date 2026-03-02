@@ -1,43 +1,27 @@
 package com.example.ride_pricing.model;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient; // Required
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-import java.time.LocalDateTime;
 
 @Table("vehicle_pricing")
-public class VehiclePricing {
-
+public class VehiclePricing extends AuditableBase {
     @Id
     private Long id;
-
-    @Column("vehicle_id")
     private Long vehicleId;
-
-    @Column("slab_id")
     private Long slabId;
-
-    @Column("service_id")
     private Long serviceId;
-
-    @Column("final_price")
     private Double finalPrice;
 
-    @Column("created_at")
-    private LocalDateTime createdAt;
+    public VehiclePricing() {
+    }
 
-    @Column("updated_at")
-    private LocalDateTime updatedAt;
-
-    @Transient
-    private String vehicleName;
-
-    @Transient
-    private String serviceName;
-
-    @Transient
-    private String range;
+    public VehiclePricing(Long id, Long vehicleId, Long slabId, Long serviceId, Double finalPrice) {
+        this.id = id;
+        this.vehicleId = vehicleId;
+        this.slabId = slabId;
+        this.serviceId = serviceId;
+        this.finalPrice = finalPrice;
+    }
 
     public Long getId() {
         return id;
@@ -77,45 +61,5 @@ public class VehiclePricing {
 
     public void setFinalPrice(Double finalPrice) {
         this.finalPrice = finalPrice;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getVehicleName() {
-        return vehicleName;
-    }
-
-    public void setVehicleName(String vehicleName) {
-        this.vehicleName = vehicleName;
-    }
-
-    public String getServiceName() {
-        return serviceName;
-    }
-
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
-    }
-
-    public String getRange() {
-        return range;
-    }
-
-    public void setRange(String range) {
-        this.range = range;
     }
 }

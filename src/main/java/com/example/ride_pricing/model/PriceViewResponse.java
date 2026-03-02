@@ -9,12 +9,42 @@ public class PriceViewResponse {
     private String range;
     private Double price;
     private String status;
-    private LocalDateTime createdAt;
 
-    public PriceViewResponse() {
+    private LocalDateTime createdAt;
+    private String createdBy;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
+
+    public PriceViewResponse() {}
+
+    // FULL constructor
+    public PriceViewResponse(String vehicle,
+                             String serviceType,
+                             String range,
+                             Double price,
+                             String status,
+                             LocalDateTime createdAt,
+                             String createdBy,
+                             LocalDateTime updatedAt,
+                             String updatedBy) {
+        this.vehicle = vehicle;
+        this.serviceType = serviceType;
+        this.range = range;
+        this.price = price;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.createdBy = createdBy;
+        this.updatedAt = updatedAt;
+        this.updatedBy = updatedBy;
     }
 
-    public PriceViewResponse(String vehicle, String serviceType, String range, Double price, String status, LocalDateTime createdAt) {
+    // SIMPLIFIED constructor (used in calculate + active methods)
+    public PriceViewResponse(String vehicle,
+                             String serviceType,
+                             String range,
+                             Double price,
+                             String status,
+                             LocalDateTime createdAt) {
         this.vehicle = vehicle;
         this.serviceType = serviceType;
         this.range = range;
@@ -23,26 +53,16 @@ public class PriceViewResponse {
         this.createdAt = createdAt;
     }
 
+    public PriceViewResponse(String name, String name1, String range, Long finalPrice, String status, LocalDateTime createdAt, String createdBy, LocalDateTime updatedAt, String updatedBy) {
+    }
+
     public String getVehicle() { return vehicle; }
-    public void setVehicle(String vehicle) { this.vehicle = vehicle; }
-
     public String getServiceType() { return serviceType; }
-    public void setServiceType(String serviceType) { this.serviceType = serviceType; }
-
     public String getRange() { return range; }
-    public void setRange(String range) { this.range = range; }
-
     public Double getPrice() { return price; }
-    public void setPrice(Double price) { this.price = price; }
-
     public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getCreatedBy() { return createdBy; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public String getUpdatedBy() { return updatedBy; }
 }

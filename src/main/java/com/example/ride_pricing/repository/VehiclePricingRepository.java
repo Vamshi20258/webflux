@@ -34,4 +34,6 @@ public interface VehiclePricingRepository extends ReactiveCrudRepository<Vehicle
     JOIN pricing_slabs ps ON ps.id = vp.slab_id
 """)
     Flux<PriceViewProjection> findAllDetailed();
+
+    Flux<VehiclePricing> findBySlabIdAndServiceId(Long slabId, Long serviceId);
 }

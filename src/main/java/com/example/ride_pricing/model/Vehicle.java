@@ -5,7 +5,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("vehicles")
-public class Vehicle {
+public class Vehicle extends AuditableBase{
 
     @Id
     private Long id;

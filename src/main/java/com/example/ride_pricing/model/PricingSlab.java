@@ -7,7 +7,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.LocalDateTime;
 
 @Table("pricing_slabs")
-public class PricingSlab {
+public class PricingSlab extends AuditableBase {
 
     @Id
     private Long id;

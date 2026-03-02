@@ -3,12 +3,9 @@ package com.example.ride_pricing.service;
 import com.example.ride_pricing.common.ApiResponse;
 import com.example.ride_pricing.model.*;
 import com.example.ride_pricing.repository.*;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.time.LocalDateTime;
 
 @Service
 public class PricingService {
@@ -18,62 +15,67 @@ public class PricingService {
     private final PricingSlabRepository slabRepo;
     private final VehiclePricingRepository vpRepo;
     private final PricingHistoryRepository historyRepo;
-    private final DatabaseClient databaseClient;
 
     public PricingService(
             VehicleRepository vehicleRepo,
             ServiceTypeRepository serviceRepo,
             PricingSlabRepository slabRepo,
             VehiclePricingRepository vpRepo,
-            PricingHistoryRepository historyRepo,
-            DatabaseClient databaseClient
+            PricingHistoryRepository historyRepo
     ) {
         this.vehicleRepo = vehicleRepo;
         this.serviceRepo = serviceRepo;
         this.slabRepo = slabRepo;
         this.vpRepo = vpRepo;
         this.historyRepo = historyRepo;
-        this.databaseClient = databaseClient;
     }
 
+    // =========================================================
+    // 1️⃣ CALCULATE PRICE
+    // =========================================================
 
-
-    public Mono<PriceViewResponse> calculatePrice(String vehicleName,
+    public Mono<PriceViewResponse> calculatePrice(String vehicle,
                                                   Double kms,
-                                                  String serviceName) {
+                                                  String serviceType) {
 
-        return vehicleRepo.findByNameIgnoreCase(vehicleName)
+        return vehicleRepo.findByNameIgnoreCase(vehicle)
                 .switchIfEmpty(Mono.error(new RuntimeException("Vehicle not found")))
-                .zipWith(serviceRepo.findByNameIgnoreCase(serviceName)
+                .zipWith(serviceRepo.findByNameIgnoreCase(serviceType)
                         .switchIfEmpty(Mono.error(new RuntimeException("Service not found"))))
                 .flatMap(tuple -> {
 
-                    Vehicle vehicle = tuple.getT1();
-                    ServiceType service = tuple.getT2();
+                    Vehicle v = tuple.getT1();
+                    ServiceType s = tuple.getT2();
 
                     return slabRepo.findMatchingSlab(kms)
                             .next()
                             .switchIfEmpty(Mono.error(new RuntimeException("KMs not supported")))
                             .flatMap(slab ->
                                     vpRepo.findByVehicleIdAndSlabIdAndServiceId(
-                                                    vehicle.getId(),
+                                                    v.getId(),
                                                     slab.getId(),
-                                                    service.getId()
-                                            )
+                                                    s.getId())
                                             .switchIfEmpty(Mono.error(new RuntimeException("Pricing not configured")))
-                                            .map(vp -> new PriceViewResponse(
-                                                    vehicle.getName(),
-                                                    service.getName(),
-                                                    slab.getMinKm() + " - " + slab.getMaxKm() + " KM",
-                                                    vp.getFinalPrice(),
-                                                    Boolean.TRUE.equals(slab.getActive()) ? "ACTIVE" : "EXPIRED",
-                                                    vp.getCreatedAt()
-                                            ))
+                                            .map(vp ->
+                                                    new PriceViewResponse(
+                                                            v.getName(),
+                                                            s.getName(),
+                                                            slab.getMinKm() + " - " + slab.getMaxKm() + " KM",
+                                                            vp.getFinalPrice(),
+                                                            Boolean.TRUE.equals(slab.getActive()) ? "ACTIVE" : "EXPIRED",
+                                                            vp.getCreatedAt(),
+                                                            vp.getCreatedBy(),
+                                                            vp.getUpdatedAt(),
+                                                            vp.getUpdatedBy()
+                                                    )
+                                            )
                             );
                 });
     }
 
-
+    // =========================================================
+    // 2️⃣ ADD NEW PRICING
+    // =========================================================
 
     public Mono<ApiResponse<Object>> addNewPricing(SlabPriceRequest request) {
 
@@ -97,10 +99,9 @@ public class PricingService {
                                             .flatMap(exists -> {
 
                                                 if (exists) {
-                                                    return Mono.just(ApiResponse.failed(
-                                                            409,
-                                                            "Pricing already exists"
-                                                    ));
+                                                    return Mono.just(
+                                                            ApiResponse.failed(409,
+                                                                    "Pricing already exists"));
                                                 }
 
                                                 VehiclePricing vp = new VehiclePricing();
@@ -108,28 +109,25 @@ public class PricingService {
                                                 vp.setServiceId(service.getId());
                                                 vp.setSlabId(slab.getId());
                                                 vp.setFinalPrice(request.getPrice());
-                                                vp.setCreatedAt(LocalDateTime.now());
-                                                vp.setUpdatedAt(LocalDateTime.now());
 
                                                 return vpRepo.save(vp)
-                                                        .map(saved -> {
-
-                                                            PriceViewResponse response =
-                                                                    new PriceViewResponse(
-                                                                            vehicle.getName(),
-                                                                            service.getName(),
-                                                                            slab.getMinKm() + " - " + slab.getMaxKm() + " KM",
-                                                                            saved.getFinalPrice(),
-                                                                            "ACTIVE",
-                                                                            saved.getCreatedAt()
-                                                                    );
-
-                                                            return ApiResponse.success(
-                                                                    201,
-                                                                    "Pricing created successfully",
-                                                                    response
-                                                            );
-                                                        });
+                                                        .map(saved ->
+                                                                ApiResponse.success(
+                                                                        201,
+                                                                        "Pricing created successfully",
+                                                                        new PriceViewResponse(
+                                                                                vehicle.getName(),
+                                                                                service.getName(),
+                                                                                slab.getMinKm() + " - " + slab.getMaxKm() + " KM",
+                                                                                saved.getFinalPrice(),
+                                                                                "ACTIVE",
+                                                                                saved.getCreatedAt(),
+                                                                                saved.getCreatedBy(),
+                                                                                saved.getUpdatedAt(),
+                                                                                saved.getUpdatedBy()
+                                                                        )
+                                                                )
+                                                        );
                                             })
                             );
                 });
@@ -142,56 +140,48 @@ public class PricingService {
         slab.setMaxKm(request.getMaxKm());
         slab.setBasePrice(request.getPrice());
         slab.setActive(true);
-        slab.setCreatedAt(LocalDateTime.now());
-        slab.setUpdatedAt(LocalDateTime.now());
 
+        // ❌ DO NOT SET createdAt / updatedAt
         return slab;
     }
 
+    // =========================================================
+    // 3️⃣ UPDATE PRICE
+    // =========================================================
 
-    public Mono<PriceUpdateResponse> updatePrice(String vehicleName,
+    public Mono<PriceUpdateResponse> updatePrice(String vehicle,
                                                  Double kms,
-                                                 String serviceName,
+                                                 String serviceType,
                                                  Double newPrice) {
 
-        return vehicleRepo.findByNameIgnoreCase(vehicleName)
+        return vehicleRepo.findByNameIgnoreCase(vehicle)
                 .switchIfEmpty(Mono.error(new RuntimeException("Vehicle not found")))
-                .zipWith(serviceRepo.findByNameIgnoreCase(serviceName)
+                .zipWith(serviceRepo.findByNameIgnoreCase(serviceType)
                         .switchIfEmpty(Mono.error(new RuntimeException("Service not found"))))
                 .flatMap(tuple -> {
 
-                    Vehicle vehicle = tuple.getT1();
-                    ServiceType service = tuple.getT2();
+                    Vehicle v = tuple.getT1();
+                    ServiceType s = tuple.getT2();
 
                     return slabRepo.findMatchingSlab(kms)
                             .next()
-                            .switchIfEmpty(Mono.error(new RuntimeException("kms out of range")))
+                            .switchIfEmpty(Mono.error(new RuntimeException("KMs out of range")))
                             .flatMap(slab ->
                                     vpRepo.findByVehicleIdAndSlabIdAndServiceId(
-                                                    vehicle.getId(),
+                                                    v.getId(),
                                                     slab.getId(),
-                                                    service.getId())
+                                                    s.getId())
                                             .switchIfEmpty(Mono.error(new RuntimeException("Pricing not found")))
                                             .flatMap(vp -> {
 
                                                 Double oldPrice = vp.getFinalPrice();
 
-                                                PricingHistory history = new PricingHistory();
-                                                history.setVehicleId(vehicle.getId());
-                                                history.setSlabId(slab.getId());
-                                                history.setServiceId(service.getId());
-                                                history.setOldPrice(oldPrice);
-                                                history.setNewPrice(newPrice);
-                                                history.setChangedAt(LocalDateTime.now());
-
                                                 vp.setFinalPrice(newPrice);
-                                                vp.setUpdatedAt(LocalDateTime.now());
 
-                                                return historyRepo.save(history)
-                                                        .then(vpRepo.save(vp))
+                                                return vpRepo.save(vp)
                                                         .thenReturn(new PriceUpdateResponse(
-                                                                vehicle.getName(),
-                                                                service.getName(),
+                                                                v.getName(),
+                                                                s.getName(),
                                                                 slab.getMinKm(),
                                                                 slab.getMaxKm(),
                                                                 oldPrice,
@@ -203,138 +193,109 @@ public class PricingService {
                 });
     }
 
-
+    // =========================================================
+    // 4️⃣ GET ALL PRICES
+    // =========================================================
 
     public Flux<PriceViewResponse> getAllPrices() {
 
-        String sql = """
-            SELECT 
-                v.name AS vehicle,
-                s.name AS service_type,
-                CONCAT(ps.min_km, ' - ', ps.max_km, ' KM') AS range,
-                vp.final_price AS price,
-                ps.active AS active,
-                vp.created_at AS created_at
-            FROM vehicle_pricing vp
-            JOIN vehicles v ON v.id = vp.vehicle_id
-            JOIN services s ON s.id = vp.service_id
-            JOIN pricing_slabs ps ON ps.id = vp.slab_id
-        """;
+        return vpRepo.findAll()
+                        .flatMap(vp ->
+                                Mono.zip(
+                                                vehicleRepo.findById(vp.getVehicleId()),
+                                                serviceRepo.findById(vp.getServiceId()),
+                                                slabRepo.findById(vp.getSlabId())
+                                        )
+                                        .map(tuple -> {
 
-        return databaseClient.sql(sql)
-                .map((row, metadata) -> {
+                                            Vehicle vehicle = tuple.getT1();
+                                            ServiceType service = tuple.getT2();
+                                            PricingSlab slab = tuple.getT3();
 
-                    Boolean active = row.get("active", Boolean.class);
-
-                    String status = Boolean.TRUE.equals(active)
-                            ? "ACTIVE"
-                            : "EXPIRED";
-
-                    return new PriceViewResponse(
-                            row.get("vehicle", String.class),
-                            row.get("service_type", String.class),
-                            row.get("range", String.class),
-                            row.get("price", Double.class),
-                            status,
-                            row.get("created_at", LocalDateTime.class)
-                    );
-                })
-                .all();
+                                            return new PriceViewResponse(
+                                                    vehicle.getName(),
+                                                    service.getName(),
+                                                    slab.getMinKm() + " - " + slab.getMaxKm() + " KM",
+                                                    vp.getFinalPrice(),
+                                                    Boolean.TRUE.equals(slab.getActive()) ? "ACTIVE" : "EXPIRED",
+                                                    vp.getCreatedAt(),
+                                                    vp.getCreatedBy(),
+                                                    vp.getUpdatedAt(),
+                                                    vp.getUpdatedBy()
+                                            );
+                                        })
+                        );
     }
 
-
+    // =========================================================
+    // 5️⃣ GET HISTORY
+    // =========================================================
 
     public Flux<PricingHistory> getAllHistory() {
         return historyRepo.findAllByOrderByChangedAtDesc();
     }
 
-    public Mono<ApiResponse<Object>> getActivePricesByKmsAndService(
-            Double kms,
-            String serviceName) {
+    // =========================================================
+    // 6️⃣ GET ACTIVE PRICES
+    // =========================================================
 
-        return serviceRepo.findByNameIgnoreCase(serviceName)
+    public Mono<ApiResponse<Object>> getActivePricesByKmsAndService(Double kms,
+                                                                    String serviceType) {
+
+        return serviceRepo.findByNameIgnoreCase(serviceType)
                 .switchIfEmpty(Mono.error(new RuntimeException("Service not found")))
                 .flatMap(service ->
-
                         slabRepo.findMatchingSlab(kms)
                                 .next()
                                 .switchIfEmpty(Mono.error(
                                         new RuntimeException("KMs out of supported range")))
-                                .flatMap(slab -> {
+                                .flatMap(slab ->
 
-                                    if (!Boolean.TRUE.equals(slab.getActive())) {
-                                        return Mono.error(
-                                                new RuntimeException("This slab is expired"));
-                                    }
-
-                                    String sql = """
-                                    SELECT 
-                                        v.name AS vehicle,
-                                        s.name AS service_type,
-                                        CONCAT(ps.min_km, ' - ', ps.max_km, ' KM') AS range,
-                                        vp.final_price AS price,
-                                        vp.created_at AS created_at
-                                    FROM vehicle_pricing vp
-                                    JOIN vehicles v ON v.id = vp.vehicle_id
-                                    JOIN services s ON s.id = vp.service_id
-                                    JOIN pricing_slabs ps ON ps.id = vp.slab_id
-                                    WHERE vp.service_id = :serviceId
-                                      AND vp.slab_id = :slabId
-                                      AND ps.active = true
-                                """;
-
-                                    return databaseClient.sql(sql)
-                                            .bind("serviceId", service.getId())
-                                            .bind("slabId", slab.getId())
-                                            .map((row, meta) ->
-                                                    new PriceViewResponse(
-                                                            row.get("vehicle", String.class),
-                                                            row.get("service_type", String.class),
-                                                            row.get("range", String.class),
-                                                            row.get("price", Double.class),
-                                                            "ACTIVE",
-                                                            row.get("created_at", LocalDateTime.class)
-                                                    )
-                                            )
-                                            .all()
-                                            .collectList()
-                                            .flatMap(list -> {
-
-                                                if (list.isEmpty()) {
-                                                    return Mono.error(new RuntimeException(
-                                                            "No active pricing available for this range"));
-                                                }
-
-                                                return Mono.just(
-                                                        ApiResponse.success(
-                                                                200,
-                                                                "Active pricing retrieved successfully",
-                                                                list
-                                                        )
-                                                );
-                                            });
-                                })
+                                        vpRepo.findBySlabIdAndServiceId(
+                                                        slab.getId(),
+                                                        service.getId())
+                                                .flatMap(vp ->
+                                                        vehicleRepo.findById(vp.getVehicleId())
+                                                                .map(vehicle ->
+                                                                        new PriceViewResponse(
+                                                                                vehicle.getName(),
+                                                                                service.getName(),
+                                                                                slab.getMinKm() + " - " + slab.getMaxKm() + " KM",
+                                                                                vp.getFinalPrice(),
+                                                                                "ACTIVE",
+                                                                                vp.getCreatedAt(),
+                                                                                vp.getCreatedBy(),
+                                                                                vp.getUpdatedAt(),
+                                                                                vp.getUpdatedBy()
+                                                                        )
+                                                                )
+                                                )
+                                                .collectList()
+                                                .map(list ->
+                                                        ApiResponse.success(200,
+                                                                "Active pricing retrieved",
+                                                                list)
+                                                )
+                                )
                 );
     }
 
-    public Mono<ApiResponse<Object>> addVehicle(String vehicleName) {
+    // =========================================================
+    // 7️⃣ ADD VEHICLE
+    // =========================================================
 
-        return vehicleRepo.findByNameIgnoreCase(vehicleName)
+    public Mono<ApiResponse<Object>> addVehicle(String name) {
+
+        return vehicleRepo.findByNameIgnoreCase(name)
                 .flatMap(existing ->
-                        Mono.just(ApiResponse.failed(
-                                409,
-                                "Vehicle already available"
-                        ))
-                )
+                        Mono.just(ApiResponse.failed(409,
+                                "Vehicle already available")))
                 .switchIfEmpty(
-                        vehicleRepo.save(new Vehicle(null, vehicleName))
+                        vehicleRepo.save(new Vehicle(null, name))
                                 .map(saved ->
-                                        ApiResponse.success(
-                                                201,
+                                        ApiResponse.success(201,
                                                 "Vehicle added successfully",
-                                                saved.getName()
-                                        )
-                                )
+                                                saved.getName()))
                 );
     }
 }
